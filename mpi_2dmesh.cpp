@@ -389,7 +389,7 @@ sendStridedBuffer(float *srcBuf,
 
     // only send from certain rank
     int rank;
-    MPI_Comm_rank(&MPI_COMM_WORLD, rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank != fromRank) return;
 
     // create buffer for subregion
@@ -413,7 +413,7 @@ recvStridedBuffer(float *dstBuf,
       int fromRank, int toRank ) {
 
    int msgTag = 0;
-   int recvSize[2];
+   //int recvSize[2];
    MPI_Status stat;
 
    //
@@ -426,7 +426,7 @@ recvStridedBuffer(float *dstBuf,
 
     // only send from certain rank
     int rank;
-    MPI_Comm_rank(&MPI_COMM_WORLD, rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank != toRank) return;
 
     // create buffer for subregion
@@ -438,7 +438,7 @@ recvStridedBuffer(float *dstBuf,
     for (int i = 0; i < expectedHeight; i++) {
         memcpy(&dstBuf[(dstOffsetRow + i) * dstWidth + dstOffsetColumn],
                &(subregion.data()[i * expectedWidth]),
-               sendWidth * sizeof(float));
+               dstWidth * sizeof(float));
     }
 }
 

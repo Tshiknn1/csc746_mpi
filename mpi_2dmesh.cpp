@@ -387,6 +387,22 @@ sendStridedBuffer(float *srcBuf,
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
 
+    // only send from certain rank
+    int rank;
+    MPI_Comm_rank(&MPI_COMM_WORLD, rank);
+    if (rank != fromRank) return;
+
+    // create buffer for subregion
+    int sendSize = sendWidth * sendHeight;
+    std::vector<float> subregion(sendSize);
+
+    for (int i = 0; i < sendHeight; i++) {
+        memcpy(&(subregion.data()[i * sendWidth]),
+               &srcBuf[(srcOffsetRow + i) * srcWidth + srcOffsetColumn],
+               sendWidth * sizeof(float));
+    }
+
+    MPI_Send(subregion.data(), sendSize, MPI_FLOAT, toRank, 0, MPI_COMM_WORLD);
 }
 
 void
@@ -408,6 +424,22 @@ recvStridedBuffer(float *dstBuf,
    // at dstOffsetColumn, dstOffsetRow, and that is expectedWidth, expectedHeight in size.
    //
 
+    // only send from certain rank
+    int rank;
+    MPI_Comm_rank(&MPI_COMM_WORLD, rank);
+    if (rank != toRank) return;
+
+    // create buffer for subregion
+    int recvSize = expectedWidth * expectedHeight;
+    std::vector<float> subregion(recvSize);
+
+    MPI_Recv(subregion.data(), recvSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
+
+    for (int i = 0; i < expectedHeight; i++) {
+        memcpy(&dstBuf[(dstOffsetRow + i) * dstWidth + dstOffsetColumn],
+               &(subregion.data()[i * expectedWidth]),
+               sendWidth * sizeof(float));
+    }
 }
 
 
@@ -416,6 +448,55 @@ recvStridedBuffer(float *dstBuf,
 // that performs sobel filtering
 // suggest using your cpu code from HW5, no OpenMP parallelism 
 //
+float
+sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, float *gy)
+{
+    // ADD CODE HERE: add your code here for computing the sobel stencil computation at location (i,j)
+    // of input s, returning a float
+
+    if (i == 0 || i == ncols - 1 || j == 0 || j == nrows - 1) {
+        return 0.0f;
+    }
+
+    float gx_out = 0.0f;
+    float gy_out = 0.0f;
+    int count = 0;
+    for (int si = i - 1; si <= i + 1; si++) {
+        for (int sj = j - 1; sj <= j + 1; sj++) {
+            float val_to_add = s[sj * ncols + si];
+            gx_out += val_to_add * gx[count];
+            gy_out += val_to_add * gy[count++];
+        }
+    }
+
+    return fmin(sqrt(gx_out * gx_out + gy_out * gy_out), 1.0f);
+}
+
+
+//
+//  do_sobel_filtering() will iterate over all input image pixels and invoke the
+//  sobel_filtered_pixel() function at each (i,j) location of input to compute the
+//  sobel filtered output pixel at location (i,j) in output.
+//
+// input: float *s - the source data, size=rows*cols
+// input: int i,j - the location of the pixel in the source data where we want to center our sobel convolution
+// input: int nrows, ncols: the dimensions of the input and output image buffers
+// input: float *gx, gy:  arrays of length 9 each, these are logically 3x3 arrays of sobel filter weights
+// output: float *d - the buffer for the output, size=rows*cols.
+//
+
+void
+do_sobel_filtering(float *in, float *out, int ncols, int nrows)
+{
+    float Gx[] = {1.0, 0.0, -1.0, 2.0, 0.0, -2.0, 1.0, 0.0, -1.0};
+    float Gy[] = {1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0};
+
+    off_t nvals = ncols * nrows;
+
+    for (off_t i = 0; i < nvals; i++) {
+        out[i] = sobel_filtered_pixel(in, i % ncols, i / ncols, ncols, nrows, Gx, Gy);
+    }
+}
 
 
 void
@@ -439,6 +520,7 @@ sobelAllTiles(int myrank, vector < vector < Tile2D > > & tileArray) {
 #endif
          // ADD YOUR CODE HERE
          // to call your sobel filtering code on each tile
+                do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->width, t->height);
          }
       }
    }

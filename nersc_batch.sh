@@ -14,7 +14,7 @@ for M in 1 2 3; do
     for P in 4 9 16 25 36 49 64 81; do
         echo "Working on method M=$M, concurrency P=$P"
 
-        srun -n $P ./mpi_2dmesh -g $M -i ../data/zebra-gray-int8-4x -x 7112 -y 5146 -o ../data/output-g$M-p$P.dat -a 1
+        srun -n $P ./mpi_2dmesh -g $M -i ../data/zebra-gray-int8-4x -x 7112 -y 5146 -o ../data/output-g$M-p$P.dat -a 1 -h
 
     done
 

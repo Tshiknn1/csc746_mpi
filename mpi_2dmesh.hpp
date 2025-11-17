@@ -79,6 +79,7 @@ class Tile2D
 
    int width, height; // dimensions of tile base grid
    int ghost_xmin, ghost_xmax, ghost_ymin, ghost_ymax;
+   int halowidth, haloheight;
 
    int tileRank;      // rank id owner of this tile
 

@@ -461,7 +461,7 @@ recvStridedBuffer(float *dstBuf,
 
         memcpy(&dstBuf[idx],
                &bufPtr[i * expectedWidth],
-               fmin(dstWidth, remainingSpace) * sizeof(float));
+               fmin(expectedWidth, remainingSpace) * sizeof(float));
     }
 }
 

@@ -48,7 +48,7 @@ parseArgs(int ac, char *av[], AppState *as)
    int rstat = 0;
    int c;
 
-   while ( (c = getopt(ac, av, "va:g:x:y:i:")) != -1) {
+   while ( (c = getopt(ac, av, "va:g:x:y:i:o:")) != -1) {
       switch(c) {
          case 'a': {
                       int action = std::atoi(optarg == NULL ? "-1" : optarg);
@@ -392,12 +392,16 @@ sendStridedBuffer(float *srcBuf,
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank != fromRank) return;
 
+    //if (rank == 0) printf("sendStridedBuffer called from rank 0\n");
+
     // create buffer for subregion
     int sendSize = sendWidth * sendHeight;
     std::vector<float> subregion(sendSize);
+    float* bufPtr = subregion.data();
 
     for (int i = 0; i < sendHeight; i++) {
-        memcpy(&(subregion.data()[i * sendWidth]),
+        //printf("sending stuff to bufPtr %d / %ld from srcBuf %d / %ld\n", i * sendWidth, subregion.size(), (srcOffsetRow + i) * srcWidth + srcOffsetColumn, srcWidth * srcHeight);
+        memcpy(&bufPtr[i * sendWidth],
                &srcBuf[(srcOffsetRow + i) * srcWidth + srcOffsetColumn],
                sendWidth * sizeof(float));
     }
@@ -416,6 +420,7 @@ recvStridedBuffer(float *dstBuf,
    //int recvSize[2];
    MPI_Status stat;
 
+
    //
    // ADD YOUR CODE HERE
    // That performs receiving of data using MPI_Recv(), coming "fromRank" and destined for
@@ -428,17 +433,26 @@ recvStridedBuffer(float *dstBuf,
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank != toRank) return;
-
+    //printf("recvStridedBuffer called from rank %d\n", rank);
+    
     // create buffer for subregion
-    int recvSize = expectedWidth * expectedHeight;
-    std::vector<float> subregion(recvSize);
+    int expectedSize = expectedWidth * expectedHeight;
+    std::vector<float> subregion(expectedSize);
+    float* bufPtr = subregion.data();
 
-    MPI_Recv(subregion.data(), recvSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
-
+    MPI_Recv(subregion.data(), expectedSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
+    
     for (int i = 0; i < expectedHeight; i++) {
+        //if ((dstOffsetRow + i) * dstWidth + dstOffsetColumn + dstWidth >= dstWidth * dstHeight) {
+        //    //printf("running past end of buffer?\n");
+        //    break;
+        //}
+        long idx = (dstOffsetRow + i) * dstWidth + dstOffsetColumn;
+        long remainingSpace = dstWidth * dstHeight - idx;
+
         memcpy(&dstBuf[(dstOffsetRow + i) * dstWidth + dstOffsetColumn],
-               &(subregion.data()[i * expectedWidth]),
-               dstWidth * sizeof(float));
+               &bufPtr[i * expectedWidth],
+               fmin(dstWidth, remainingSpace) * sizeof(float));
     }
 }
 
@@ -671,7 +685,7 @@ int main(int ac, char *av[]) {
    char hostname[256];
    gethostname(hostname, sizeof(hostname));
 
-   printf("Hello world, I'm rank %d of %d total ranks running on <%s>\n", as.myrank, as.nranks, hostname);
+   //printf("Hello world, I'm rank %d of %d total ranks running on <%s>\n", as.myrank, as.nranks, hostname);
    MPI_Barrier(MPI_COMM_WORLD);
 
 #if DEBUG_TRACE

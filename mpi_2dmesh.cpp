@@ -399,11 +399,17 @@ sendStridedBuffer(float *srcBuf,
     std::vector<float> subregion(sendSize);
     float* bufPtr = subregion.data();
 
+    long srcOffsetPos = srcOffsetRow * srcWidth + srcOffsetColumn;
+    if (rank == 0) printf("doing sendStridedBuffer for rank 0 from rank %d: srcOffsetRow = %d, srcOffsetColumn=%d, srcOffsetPos=%d\n", fromRank, srcOffsetRow, srcOffsetColumn, srcOffsetPos);
+
     for (int i = 0; i < sendHeight; i++) {
         //printf("sending stuff to bufPtr %d / %ld from srcBuf %d / %ld\n", i * sendWidth, subregion.size(), (srcOffsetRow + i) * srcWidth + srcOffsetColumn, srcWidth * srcHeight);
+        long idx = srcOffsetPos + i * srcWidth;
+        long remainingSpace = srcWidth * srcHeight - idx;
+
         memcpy(&bufPtr[i * sendWidth],
-               &srcBuf[(srcOffsetRow + i) * srcWidth + srcOffsetColumn],
-               sendWidth * sizeof(float));
+               &srcBuf[idx],
+               fmin(sendWidth, remainingSpace) * sizeof(float));
     }
 
     MPI_Send(subregion.data(), sendSize, MPI_FLOAT, toRank, 0, MPI_COMM_WORLD);
@@ -443,6 +449,7 @@ recvStridedBuffer(float *dstBuf,
     MPI_Recv(subregion.data(), expectedSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
 
     long dstOffsetPos = dstOffsetRow * dstWidth + dstOffsetColumn;
+    if (rank == 0) printf("doing recvStridedBuffer for rank 0 from rank %d: dstOffsetRow = %d, dstOffsetColumn=%d, dstOffsetPos=%d\n", fromRank, dstOffsetRow, dstOffsetColumn, dstOffsetPos);
     
     for (int i = 0; i < expectedHeight; i++) {
         //if ((dstOffsetRow + i) * dstWidth + dstOffsetColumn + dstWidth >= dstWidth * dstHeight) {

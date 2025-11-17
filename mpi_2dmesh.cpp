@@ -441,16 +441,18 @@ recvStridedBuffer(float *dstBuf,
     float* bufPtr = subregion.data();
 
     MPI_Recv(subregion.data(), expectedSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
+
+    long dstOffsetPos = dstOffsetRow * dstWidth + dstOffsetColumn;
     
     for (int i = 0; i < expectedHeight; i++) {
         //if ((dstOffsetRow + i) * dstWidth + dstOffsetColumn + dstWidth >= dstWidth * dstHeight) {
         //    //printf("running past end of buffer?\n");
         //    break;
         //}
-        long idx = (dstOffsetRow + i) * dstWidth + dstOffsetColumn;
+        long idx = dstOffsetPos + i * dstWidth;
         long remainingSpace = dstWidth * dstHeight - idx;
 
-        memcpy(&dstBuf[(dstOffsetRow + i) * dstWidth + dstOffsetColumn],
+        memcpy(&dstBuf[idx],
                &bufPtr[i * expectedWidth],
                fmin(dstWidth, remainingSpace) * sizeof(float));
     }

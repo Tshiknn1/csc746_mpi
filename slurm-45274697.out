@@ -1,0 +1,168 @@
+Working on method M=1, concurrency P=4
+
+
+Timing results from rank 0: 
+	Scatter time:	39.6812 (ms) 
+	Sobel time:	68.5972 (ms) 
+	Gather time:	29.8285 (ms) 
+Working on method M=1, concurrency P=9
+
+
+Timing results from rank 0: 
+	Scatter time:	30.4017 (ms) 
+	Sobel time:	30.6807 (ms) 
+	Gather time:	25.9289 (ms) 
+Working on method M=1, concurrency P=16
+
+
+Timing results from rank 0: 
+	Scatter time:	28.3855 (ms) 
+	Sobel time:	17.5154 (ms) 
+	Gather time:	29.7568 (ms) 
+Working on method M=1, concurrency P=25
+
+
+Timing results from rank 0: 
+	Scatter time:	29.0305 (ms) 
+	Sobel time:	13.0559 (ms) 
+	Gather time:	26.3409 (ms) 
+Working on method M=1, concurrency P=36
+
+
+Timing results from rank 0: 
+	Scatter time:	31.2768 (ms) 
+	Sobel time:	9.3042 (ms) 
+	Gather time:	26.5655 (ms) 
+Working on method M=1, concurrency P=49
+
+
+Timing results from rank 0: 
+	Scatter time:	30.4394 (ms) 
+	Sobel time:	5.8128 (ms) 
+	Gather time:	27.8812 (ms) 
+Working on method M=1, concurrency P=64
+
+
+Timing results from rank 0: 
+	Scatter time:	28.6909 (ms) 
+	Sobel time:	5.5819 (ms) 
+	Gather time:	26.6865 (ms) 
+Working on method M=1, concurrency P=81
+
+
+Timing results from rank 0: 
+	Scatter time:	31.2899 (ms) 
+	Sobel time:	6.2650 (ms) 
+	Gather time:	27.3286 (ms) 
+Working on method M=2, concurrency P=4
+
+
+Timing results from rank 0: 
+	Scatter time:	41.9366 (ms) 
+	Sobel time:	68.8917 (ms) 
+	Gather time:	51.3301 (ms) 
+Working on method M=2, concurrency P=9
+
+
+Timing results from rank 0: 
+	Scatter time:	39.7689 (ms) 
+	Sobel time:	30.6182 (ms) 
+	Gather time:	89.6154 (ms) 
+Working on method M=2, concurrency P=16
+
+
+Timing results from rank 0: 
+	Scatter time:	30.7893 (ms) 
+	Sobel time:	18.7925 (ms) 
+	Gather time:	142.7919 (ms) 
+Working on method M=2, concurrency P=25
+
+
+Timing results from rank 0: 
+	Scatter time:	32.1079 (ms) 
+	Sobel time:	19.8922 (ms) 
+	Gather time:	212.6258 (ms) 
+Working on method M=2, concurrency P=36
+
+
+Timing results from rank 0: 
+	Scatter time:	31.9286 (ms) 
+	Sobel time:	8.3965 (ms) 
+	Gather time:	308.2160 (ms) 
+Working on method M=2, concurrency P=49
+
+
+Timing results from rank 0: 
+	Scatter time:	34.7318 (ms) 
+	Sobel time:	6.3263 (ms) 
+	Gather time:	414.6030 (ms) 
+Working on method M=2, concurrency P=64
+
+
+Timing results from rank 0: 
+	Scatter time:	36.5839 (ms) 
+	Sobel time:	5.1677 (ms) 
+	Gather time:	537.2011 (ms) 
+Working on method M=2, concurrency P=81
+
+
+Timing results from rank 0: 
+	Scatter time:	36.8957 (ms) 
+	Sobel time:	6.6840 (ms) 
+	Gather time:	687.7242 (ms) 
+Working on method M=3, concurrency P=4
+
+
+Timing results from rank 0: 
+	Scatter time:	39.9652 (ms) 
+	Sobel time:	69.2453 (ms) 
+	Gather time:	34.8028 (ms) 
+Working on method M=3, concurrency P=9
+
+
+Timing results from rank 0: 
+	Scatter time:	35.3101 (ms) 
+	Sobel time:	31.5698 (ms) 
+	Gather time:	43.0317 (ms) 
+Working on method M=3, concurrency P=16
+
+
+Timing results from rank 0: 
+	Scatter time:	30.3492 (ms) 
+	Sobel time:	17.8080 (ms) 
+	Gather time:	48.9076 (ms) 
+Working on method M=3, concurrency P=25
+
+
+Timing results from rank 0: 
+	Scatter time:	34.5925 (ms) 
+	Sobel time:	11.2223 (ms) 
+	Gather time:	45.0069 (ms) 
+Working on method M=3, concurrency P=36
+
+
+Timing results from rank 0: 
+	Scatter time:	32.0500 (ms) 
+	Sobel time:	20.3844 (ms) 
+	Gather time:	47.4309 (ms) 
+Working on method M=3, concurrency P=49
+
+
+Timing results from rank 0: 
+	Scatter time:	32.3488 (ms) 
+	Sobel time:	5.9491 (ms) 
+	Gather time:	51.8262 (ms) 
+Working on method M=3, concurrency P=64
+
+
+Timing results from rank 0: 
+	Scatter time:	35.6889 (ms) 
+	Sobel time:	5.4437 (ms) 
+	Gather time:	55.3617 (ms) 
+Working on method M=3, concurrency P=81
+
+
+Timing results from rank 0: 
+	Scatter time:	33.0502 (ms) 
+	Sobel time:	3.9838 (ms) 
+	Gather time:	60.3691 (ms) 

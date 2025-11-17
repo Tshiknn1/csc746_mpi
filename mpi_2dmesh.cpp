@@ -374,7 +374,8 @@ sendStridedBuffer(float *srcBuf,
       int srcWidth, int srcHeight, 
       int srcOffsetColumn, int srcOffsetRow, 
       int sendWidth, int sendHeight, 
-      int fromRank, int toRank ) 
+      int fromRank, int toRank )
+
 {
    int msgTag = 0;
 
@@ -561,10 +562,28 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
       for (int col=0; col<tileArray[row].size(); col++)
       {  
          Tile2D *t = &(tileArray[row][col]);
+         // adjust width, xloc to include halo
+         if (row > 0) {
+             t->xloc -= 1;
+             t->width += 1;
+         }
+         if (row < tileArray.size() - 1) {
+             t->width += 1;
+         }
+
+         // adjust height, yloc to include halo
+         if (col > 0) {
+             t->yloc -= 1;
+             t->height += 1;
+         }
+         if (col < tileArray[row].size() - 1) {
+             t->height += 1;
+         }
 
          if (myrank != 0 && t->tileRank == myrank)
          {
             int fromRank=0;
+
 
             // receive a tile's buffer 
             t->inputBuffer.resize(t->width*t->height);
@@ -589,7 +608,8 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
                      global_width, global_height,  // size of the src buffer
                      t->xloc, t->yloc, // offset into the send buffer
                      t->width, t->height,  // size of the buffer to send,
-                     myrank, t->tileRank);
+                     myrank, t->tileRank,
+                     0, 0);
             }
             else // rather then have rank 0 send to rank 0, just do a strided copy into a tile's input buffer
             {
@@ -629,6 +649,27 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
       {  
          Tile2D *t = &(tileArray[row][col]);
 
+         int xOffset;
+         if (col == 0) xOffset = 0;
+         else xOffset = 1;
+
+         int yOffset;
+         if (row == 0) yOffset = 0;
+         else yOffset = 1;
+
+         // get rid of halo
+         if (row > 0) {
+            t->height -= 1;
+            t->xloc += 1;
+         }
+         if (row < tileArray.size() - 1) t->height -= 1;
+
+         if (col > 0) {
+            t->width -= 1;
+            t->yloc += 1;
+         }
+         if (row < tileArray[row].size() - 1) t->width -= 1;
+
 #if DEBUG_TRACE
          printf("gatherAllTiles(): t->tileRank=%d, myrank=%d, t->outputBuffer->size()=%d \n", t->tileRank, myrank, t->outputBuffer.size());
 #endif
@@ -638,7 +679,7 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
             // send the tile's output buffer to rank 0
             sendStridedBuffer(t->outputBuffer.data(), // ptr to the buffer to send
                t->width, t->height,  // size of the src buffer
-               0, 0, // offset into the send buffer
+               xOffset, yOffset, // offset into the send buffer
                t->width, t->height,  // size of the buffer to send,
                t->tileRank, 0);   // from rank, to rank
          }

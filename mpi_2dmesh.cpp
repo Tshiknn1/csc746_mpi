@@ -40,7 +40,9 @@
 
 #include "mpi_2dmesh.hpp"  // for AppState and Tile2D class
 
-#define DEBUG_TRACE 0 
+#define DEBUG_TRACE 1 
+
+bool halo = false;
 
 int
 parseArgs(int ac, char *av[], AppState *as)
@@ -48,7 +50,7 @@ parseArgs(int ac, char *av[], AppState *as)
    int rstat = 0;
    int c;
 
-   while ( (c = getopt(ac, av, "va:g:x:y:i:o:")) != -1) {
+   while ( (c = getopt(ac, av, "va:g:x:y:i:o:h")) != -1) {
       switch(c) {
          case 'a': {
                       int action = std::atoi(optarg == NULL ? "-1" : optarg);
@@ -106,6 +108,10 @@ parseArgs(int ac, char *av[], AppState *as)
          case 'v' : {
                         as->debug = 1;
                        break;
+                    }
+         case 'h' : {
+                        halo = true;
+                        break;
                     }
       } // end switch
 
@@ -388,6 +394,8 @@ sendStridedBuffer(float *srcBuf,
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
 
+   printf("sendStridedBuffer was called width sendWidth=%d, sendHeight=%d, srcOffsetColumn=%d, srcOffsetRow=%d, fromRank=%d, toRank=%d\n", sendWidth, sendHeight, srcOffsetColumn, srcOffsetRow, fromRank, toRank);
+
     // only send from certain rank
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -400,8 +408,10 @@ sendStridedBuffer(float *srcBuf,
     std::vector<float> subregion(sendSize);
     float* bufPtr = subregion.data();
 
+    std:;vector<float> dummybuf(sendSize);
+
     long srcOffsetPos = srcOffsetRow * srcWidth + srcOffsetColumn;
-    if (rank == 0) printf("doing sendStridedBuffer for rank 0 from rank %d: srcOffsetRow = %d, srcOffsetColumn=%d, srcOffsetPos=%d\n", fromRank, srcOffsetRow, srcOffsetColumn, srcOffsetPos);
+    //if (rank == 0) printf("doing sendStridedBuffer for rank 0 from rank %d: srcOffsetRow = %d, srcOffsetColumn=%d, srcOffsetPos=%d\n", fromRank, srcOffsetRow, srcOffsetColumn, srcOffsetPos);
 
     for (int i = 0; i < sendHeight; i++) {
         //printf("sending stuff to bufPtr %d / %ld from srcBuf %d / %ld\n", i * sendWidth, subregion.size(), (srcOffsetRow + i) * srcWidth + srcOffsetColumn, srcWidth * srcHeight);
@@ -562,22 +572,25 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
       for (int col=0; col<tileArray[row].size(); col++)
       {  
          Tile2D *t = &(tileArray[row][col]);
-         // adjust width, xloc to include halo
-         if (row > 0) {
-             t->xloc -= 1;
-             t->width += 1;
-         }
-         if (row < tileArray.size() - 1) {
-             t->width += 1;
-         }
 
-         // adjust height, yloc to include halo
-         if (col > 0) {
-             t->yloc -= 1;
-             t->height += 1;
-         }
-         if (col < tileArray[row].size() - 1) {
-             t->height += 1;
+         if (halo) {
+            // adjust width, xloc to include halo
+            if (col > 0) {
+                t->xloc -= 1;
+                t->width += 1;
+            }
+            if (col < tileArray[row].size() - 1) {
+                t->width += 1;
+            }
+
+            // adjust height, yloc to include halo
+            if (row > 0) {
+                t->yloc -= 1;
+                t->height += 1;
+            }
+            if (row < tileArray.size() - 1) {
+                t->height += 1;
+            }
          }
 
          if (myrank != 0 && t->tileRank == myrank)
@@ -589,7 +602,7 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
             t->inputBuffer.resize(t->width*t->height);
             t->outputBuffer.resize(t->width*t->height);
 #if DEBUG_TRACE
-            printf("scatterAllTiles() receive side:: t->tileRank=%d, myrank=%d, t->inputBuffer->size()=%d, t->outputBuffersize()=%d \n", t->tileRank, myrank, t->inputBuffer.size(), t->outputBuffer.size());
+            printf("scatterAllTiles() receive side:: t->tileRank=%d, myrank=%d, t->width=%d, t->height=%d, t->inputBuffer->size()=%d, t->outputBuffersize()=%d \n", t->tileRank, myrank, t->width, t->height, t->inputBuffer.size(), t->outputBuffer.size());
 #endif
 
             recvStridedBuffer(t->inputBuffer.data(), t->width, t->height,
@@ -601,15 +614,14 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
          {
             if (t->tileRank != 0) {
 #if DEBUG_TRACE
-               printf("scatterAllTiles() send side: t->tileRank=%d, myrank=%d, t->inputBuffer->size()=%d \n", t->tileRank, myrank, t->inputBuffer.size());
+               printf("scatterAllTiles() send side: t->tileRank=%d, myrank=%d, t->width=%d, t->height=%d, t->inputBuffer->size()=%d \n", t->tileRank, myrank, t->width, t->height, t->inputBuffer.size());
 #endif
 
                sendStridedBuffer(s, // ptr to the buffer to send
                      global_width, global_height,  // size of the src buffer
                      t->xloc, t->yloc, // offset into the send buffer
                      t->width, t->height,  // size of the buffer to send,
-                     myrank, t->tileRank,
-                     0, 0);
+                     myrank, t->tileRank);
             }
             else // rather then have rank 0 send to rank 0, just do a strided copy into a tile's input buffer
             {
@@ -621,7 +633,7 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
 
                for (int j=0;j<t->height;j++, s_offset+=global_width, d_offset+=t->width)
                {
-                  memcpy((void *)(d+d_offset), (void *)(s+s_offset), sizeof(float)*t->width);
+                  //memcpy((void *)(d+d_offset), (void *)(s+s_offset), sizeof(float)*t->width);
                }
             }
          }
@@ -649,26 +661,25 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
       {  
          Tile2D *t = &(tileArray[row][col]);
 
-         int xOffset;
-         if (col == 0) xOffset = 0;
-         else xOffset = 1;
+         int xOffset = 0;
+         int yOffset = 0;
+         
+         if (halo) {
+            // get rid of halo
+            if (col > 0) {
+               xOffset = 1;
+               t->height -= 1;
+               t->xloc += 1;
+            }
+            if (col < tileArray[row].size() - 1) t->height -= 1;
 
-         int yOffset;
-         if (row == 0) yOffset = 0;
-         else yOffset = 1;
-
-         // get rid of halo
-         if (row > 0) {
-            t->height -= 1;
-            t->xloc += 1;
+            if (row > 0) {
+               yOffset = 1;
+               t->width -= 1;
+               t->yloc += 1;
+            }
+            if (row < tileArray.size() - 1) t->width -= 1;
          }
-         if (row < tileArray.size() - 1) t->height -= 1;
-
-         if (col > 0) {
-            t->width -= 1;
-            t->yloc += 1;
-         }
-         if (row < tileArray[row].size() - 1) t->width -= 1;
 
 #if DEBUG_TRACE
          printf("gatherAllTiles(): t->tileRank=%d, myrank=%d, t->outputBuffer->size()=%d \n", t->tileRank, myrank, t->outputBuffer.size());
@@ -700,7 +711,7 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
 
                for (int j=0;j<t->height;j++, s_offset+=t->width, d_offset+=global_width)
                {
-                  memcpy((void *)(d+d_offset), (void *)(s+s_offset), sizeof(float)*t->width);
+                  //memcpy((void *)(d+d_offset), (void *)(s+s_offset), sizeof(float)*t->width);
                }
             }
          }

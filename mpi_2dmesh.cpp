@@ -404,8 +404,13 @@ sendStridedBuffer(float *srcBuf,
 
     //if (rank == 0) printf("sendStridedBuffer called from rank 0\n");
 
-    // create buffer for subregion
     int sendSize = sendWidth * sendHeight;
+    if (sendSize == srcWidth * srcHeight) {
+        MPI_Send(srcBuf, sendSize, MPI_FLOAT, toRank, 0, MPI_COMM_WORLD);
+        return;
+    }
+
+    // create buffer for subregion
     std::vector<float> subregion(sendSize);
     float* bufPtr = subregion.data();
 
@@ -458,6 +463,11 @@ recvStridedBuffer(float *dstBuf,
     float* bufPtr = subregion.data();
 
     MPI_Recv(subregion.data(), expectedSize, MPI_FLOAT, fromRank, 0, MPI_COMM_WORLD, &stat);
+
+    if (expectedSize == dstWidth * dstHeight) {
+        memcpy(dstBuf, subregion.data(), expectedSize * sizeof(float));
+        return;
+    }
 
     long dstOffsetPos = dstOffsetRow * dstWidth + dstOffsetColumn;
     //if (rank == 0) printf("doing recvStridedBuffer for rank 0 from rank %d: dstOffsetRow = %d, dstOffsetColumn=%d, dstOffsetPos=%d\n", fromRank, dstOffsetRow, dstOffsetColumn, dstOffsetPos);
@@ -708,7 +718,7 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
                off_t s_offset=yOffset*t->halowidth+xOffset, d_offset=0;
                d_offset = t->yloc * global_width + t->xloc;
 
-               for (int j=0;j<t->height;j++, s_offset+=t->width, d_offset+=global_width)
+               for (int j=0;j<t->height;j++, s_offset+=t->halowidth, d_offset+=global_width)
                {
                   memcpy((void *)(d+d_offset), (void *)(s+s_offset), sizeof(float)*t->width);
                }

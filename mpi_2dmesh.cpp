@@ -375,6 +375,7 @@ writeOutputFile(AppState &as)
 }
 
 
+// TODO: can we avoid extraneous copies here?
 void
 sendStridedBuffer(float *srcBuf, 
       int srcWidth, int srcHeight, 
@@ -383,7 +384,7 @@ sendStridedBuffer(float *srcBuf,
       int fromRank, int toRank )
 
 {
-   int msgTag = 0;
+    int msgTag = 0;
 
    //
    // ADD YOUR CODE HERE
@@ -419,15 +420,12 @@ sendStridedBuffer(float *srcBuf,
         memcpy(&bufPtr[i * sendWidth],
                &srcBuf[idx],
                fmin(sendWidth, remainingSpace) * sizeof(float));
-        //memcpy(bufPtr,
-        //       srcBuf,
-        //       fmin(sendWidth, remainingSpace) * sizeof(float));
-
     }
 
     MPI_Send(subregion.data(), sendSize, MPI_FLOAT, toRank, 0, MPI_COMM_WORLD);
 }
 
+// TODO: can we avoid extraneous copies here?
 void
 recvStridedBuffer(float *dstBuf, 
       int dstWidth, int dstHeight, 
